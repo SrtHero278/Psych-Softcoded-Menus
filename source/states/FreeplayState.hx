@@ -17,7 +17,7 @@ import substates.ResetScoreSubState;
 import sys.FileSystem;
 #end
 
-class FreeplayState extends MusicBeatState
+class FreeplayState extends backend.ScriptState
 {
 	var songs:Array<SongMetadata> = [];
 
@@ -47,7 +47,7 @@ class FreeplayState extends MusicBeatState
 	var missingTextBG:FlxSprite;
 	var missingText:FlxText;
 
-	override function create()
+	override function normCreate()
 	{
 		//Paths.clearStoredMemory();
 		//Paths.clearUnusedMemory();
@@ -175,7 +175,6 @@ class FreeplayState extends MusicBeatState
 		add(text);
 		
 		updateTexts();
-		super.create();
 	}
 
 	override function closeSubState() {
@@ -213,7 +212,7 @@ class FreeplayState extends MusicBeatState
 	var instPlaying:Int = -1;
 	public static var vocals:FlxSound = null;
 	var holdTime:Float = 0;
-	override function update(elapsed:Float)
+	override function normUpdate(elapsed:Float)
 	{
 		if (FlxG.sound.music.volume < 0.7)
 		{
@@ -376,7 +375,6 @@ class FreeplayState extends MusicBeatState
 				FlxG.sound.play(Paths.sound('cancelMenu'));
 
 				updateTexts(elapsed);
-				super.update(elapsed);
 				return;
 			}
 			LoadingState.loadAndSwitchState(new PlayState());
@@ -396,7 +394,6 @@ class FreeplayState extends MusicBeatState
 		}
 
 		updateTexts(elapsed);
-		super.update(elapsed);
 	}
 
 	public static function destroyFreeplayVocals() {

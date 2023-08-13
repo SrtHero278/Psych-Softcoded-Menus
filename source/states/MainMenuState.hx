@@ -14,7 +14,7 @@ import objects.AchievementPopup;
 import states.editors.MasterEditorMenu;
 import options.OptionsState;
 
-class MainMenuState extends MusicBeatState
+class MainMenuState extends backend.ScriptState
 {
 	public static var psychEngineVersion:String = '0.7.1h'; //This is also used for Discord RPC
 	public static var curSelected:Int = 0;
@@ -36,7 +36,7 @@ class MainMenuState extends MusicBeatState
 	var magenta:FlxSprite;
 	var camFollow:FlxObject;
 
-	override function create()
+	override function normCreate()
 	{
 		#if MODS_ALLOWED
 		Mods.pushGlobalMods();
@@ -141,8 +141,6 @@ class MainMenuState extends MusicBeatState
 			}
 		}
 		#end
-
-		super.create();
 	}
 
 	#if ACHIEVEMENTS_ALLOWED
@@ -156,7 +154,7 @@ class MainMenuState extends MusicBeatState
 
 	var selectedSomethin:Bool = false;
 
-	override function update(elapsed:Float)
+	override function normUpdate(elapsed:Float)
 	{
 		if (FlxG.sound.music.volume < 0.8)
 		{
@@ -253,8 +251,6 @@ class MainMenuState extends MusicBeatState
 			}
 			#end
 		}
-
-		super.update(elapsed);
 
 		menuItems.forEach(function(spr:FlxSprite)
 		{
