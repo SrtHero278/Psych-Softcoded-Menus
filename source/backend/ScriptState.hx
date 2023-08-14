@@ -85,6 +85,11 @@ class ScriptState extends backend.MusicBeatState {
         return (script != null) ? script.call(name, params) : null;
     }
 
+    function cancelableCall(name:String, ?params:Array<Dynamic>):Bool {
+        var returned = scriptCall(name, params);
+        return (returned != null && returned.returnValue == psychlua.FunkinLua.Function_Stop);
+    }
+
     function tryScript() {
         var scriptPath = Paths.getPath("states/" + scriptName + ".hx", TEXT, null, true);
 
@@ -132,6 +137,8 @@ class ScriptState extends backend.MusicBeatState {
             script.set('this', this);
             script.set('buildTarget', psychlua.FunkinLua.getBuildTarget());
             
+            script.set('Function_Stop', psychlua.FunkinLua.Function_Stop);
+
             script.set('add', add);
             script.set('insert', insert);
             script.set('remove', remove);

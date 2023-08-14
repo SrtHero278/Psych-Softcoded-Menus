@@ -39,7 +39,12 @@ typedef TitleData =
 	bpm:Int
 }
 
-class TitleState extends MusicBeatState
+
+/**
+ * THIS STATE CANNOT BE OVERRIDDEN. We just have a script to mess with the menu items.
+ * We dont want to mess with this a lot bc theres a lot of initiation stuff in here.
+ */
+class TitleState extends backend.ScriptState
 {
 	public static var muteKeys:Array<FlxKey> = [FlxKey.ZERO];
 	public static var volumeDownKeys:Array<FlxKey> = [FlxKey.NUMPADMINUS, FlxKey.MINUS];
@@ -192,6 +197,9 @@ class TitleState extends MusicBeatState
 
 	function startIntro()
 	{
+		if (cancelableCall("onStartIntro"))
+			return;
+
 		if (!initialized)
 		{
 			if(FlxG.sound.music == null) {
@@ -201,6 +209,72 @@ class TitleState extends MusicBeatState
 
 		Conductor.bpm = titleJSON.bpm;
 		persistentUpdate = true;
+
+		if (!cancelableCall("onMakeItems"))
+			makeMenuItems();
+
+		titleText = new FlxSprite(titleJSON.startx, titleJSON.starty);
+		titleText.frames = Paths.getSparrowAtlas('titleEnter');
+		var animFrames:Array<FlxFrame> = [];
+		@:privateAccess {
+			titleText.animation.findByPrefix(animFrames, "ENTER IDLE");
+			titleText.animation.findByPrefix(animFrames, "ENTER FREEZE");
+		}
+		
+		if (animFrames.length > 0) {
+			newTitle = true;
+			
+			titleText.animation.addByPrefix('idle', "ENTER IDLE", 24);
+			titleText.animation.addByPrefix('press', ClientPrefs.data.flashing ? "ENTER PRESSED" : "ENTER FREEZE", 24);
+		}
+		else {
+			newTitle = false;
+			
+			titleText.animation.addByPrefix('idle', "Press Enter to Begin", 24);
+			titleText.animation.addByPrefix('press', "ENTER PRESSED", 24);
+		}
+		
+		titleText.animation.play('idle');
+		titleText.updateHitbox();
+		// titleText.screenCenter(X);
+		add(titleText);
+
+		// FlxTween.tween(logoBl, {y: logoBl.y + 50}, 0.6, {ease: FlxEase.quadInOut, type: PINGPONG});
+		// FlxTween.tween(logo, {y: logoBl.y + 50}, 0.6, {ease: FlxEase.quadInOut, type: PINGPONG, startDelay: 0.1});
+
+		credGroup = new FlxGroup();
+		add(credGroup);
+		textGroup = new FlxGroup();
+
+		blackScreen = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, FlxColor.BLACK);
+		credGroup.add(blackScreen);
+
+		credTextShit = new Alphabet(0, 0, "", true);
+		credTextShit.screenCenter();
+
+		// credTextShit.alignment = CENTER;
+
+		credTextShit.visible = false;
+
+		ngSpr = new FlxSprite(0, FlxG.height * 0.52).loadGraphic(Paths.image('newgrounds_logo'));
+		add(ngSpr);
+		ngSpr.visible = false;
+		ngSpr.setGraphicSize(Std.int(ngSpr.width * 0.8));
+		ngSpr.updateHitbox();
+		ngSpr.screenCenter(X);
+		ngSpr.antialiasing = ClientPrefs.data.antialiasing;
+
+		FlxTween.tween(credTextShit, {y: credTextShit.y + 20}, 2.9, {ease: FlxEase.quadInOut, type: PINGPONG});
+
+		if (initialized)
+			skipIntro();
+		else
+			initialized = true;
+
+		scriptCall("onStartIntroPost");
+	}
+
+	function makeMenuItems() {
 
 		var bg:FlxSprite = new FlxSprite();
 		bg.antialiasing = ClientPrefs.data.antialiasing;
@@ -270,71 +344,6 @@ class TitleState extends MusicBeatState
 			gfDance.shader = swagShader.shader;
 			logoBl.shader = swagShader.shader;
 		}
-
-		titleText = new FlxSprite(titleJSON.startx, titleJSON.starty);
-		titleText.frames = Paths.getSparrowAtlas('titleEnter');
-		var animFrames:Array<FlxFrame> = [];
-		@:privateAccess {
-			titleText.animation.findByPrefix(animFrames, "ENTER IDLE");
-			titleText.animation.findByPrefix(animFrames, "ENTER FREEZE");
-		}
-		
-		if (animFrames.length > 0) {
-			newTitle = true;
-			
-			titleText.animation.addByPrefix('idle', "ENTER IDLE", 24);
-			titleText.animation.addByPrefix('press', ClientPrefs.data.flashing ? "ENTER PRESSED" : "ENTER FREEZE", 24);
-		}
-		else {
-			newTitle = false;
-			
-			titleText.animation.addByPrefix('idle', "Press Enter to Begin", 24);
-			titleText.animation.addByPrefix('press', "ENTER PRESSED", 24);
-		}
-		
-		titleText.animation.play('idle');
-		titleText.updateHitbox();
-		// titleText.screenCenter(X);
-		add(titleText);
-
-		var logo:FlxSprite = new FlxSprite().loadGraphic(Paths.image('logo'));
-		logo.antialiasing = ClientPrefs.data.antialiasing;
-		logo.screenCenter();
-		// add(logo);
-
-		// FlxTween.tween(logoBl, {y: logoBl.y + 50}, 0.6, {ease: FlxEase.quadInOut, type: PINGPONG});
-		// FlxTween.tween(logo, {y: logoBl.y + 50}, 0.6, {ease: FlxEase.quadInOut, type: PINGPONG, startDelay: 0.1});
-
-		credGroup = new FlxGroup();
-		add(credGroup);
-		textGroup = new FlxGroup();
-
-		blackScreen = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, FlxColor.BLACK);
-		credGroup.add(blackScreen);
-
-		credTextShit = new Alphabet(0, 0, "", true);
-		credTextShit.screenCenter();
-
-		// credTextShit.alignment = CENTER;
-
-		credTextShit.visible = false;
-
-		ngSpr = new FlxSprite(0, FlxG.height * 0.52).loadGraphic(Paths.image('newgrounds_logo'));
-		add(ngSpr);
-		ngSpr.visible = false;
-		ngSpr.setGraphicSize(Std.int(ngSpr.width * 0.8));
-		ngSpr.updateHitbox();
-		ngSpr.screenCenter(X);
-		ngSpr.antialiasing = ClientPrefs.data.antialiasing;
-
-		FlxTween.tween(credTextShit, {y: credTextShit.y + 20}, 2.9, {ease: FlxEase.quadInOut, type: PINGPONG});
-
-		if (initialized)
-			skipIntro();
-		else
-			initialized = true;
-
-		// credGroup.add(credTextShit);
 	}
 
 	function getIntroTextShit():Array<Array<String>>
@@ -541,8 +550,6 @@ class TitleState extends MusicBeatState
 	public static var closedState:Bool = false;
 	override function beatHit()
 	{
-		super.beatHit();
-
 		if(logoBl != null)
 			logoBl.animation.play('bump', true);
 
@@ -624,12 +631,16 @@ class TitleState extends MusicBeatState
 					skipIntro();
 			}
 		}
+
+		super.beatHit();
 	}
 
 	var skippedIntro:Bool = false;
 	var increaseVolume:Bool = false;
 	function skipIntro():Void
 	{
+		scriptCall("onSkipIntro");
+
 		if (!skippedIntro)
 		{
 			if (playJingle) //Ignore deez
@@ -708,5 +719,7 @@ class TitleState extends MusicBeatState
 			}
 			skippedIntro = true;
 		}
+
+		scriptCall("onSkipIntroPost");
 	}
 }
