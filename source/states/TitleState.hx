@@ -272,10 +272,14 @@ class TitleState extends backend.ScriptState
 			initialized = true;
 
 		scriptCall("onStartIntroPost");
+
+		#if LUA_ALLOWED
+		remove(luaDebugGroup);
+		add(luaDebugGroup);
+		#end
 	}
 
 	function makeMenuItems() {
-
 		var bg:FlxSprite = new FlxSprite();
 		bg.antialiasing = ClientPrefs.data.antialiasing;
 
@@ -339,8 +343,7 @@ class TitleState extends backend.ScriptState
 
 		add(gfDance);
 		add(logoBl);
-		if(swagShader != null)
-		{
+		if(swagShader != null) {
 			gfDance.shader = swagShader.shader;
 			logoBl.shader = swagShader.shader;
 		}
@@ -377,6 +380,7 @@ class TitleState extends backend.ScriptState
 		// FlxG.watch.addQuick('amp', FlxG.sound.music.amplitude);
 
 		var pressedEnter:Bool = FlxG.keys.justPressed.ENTER || controls.ACCEPT;
+		scriptSet("pressedEnter", pressedEnter);
 
 		#if mobile
 		for (touch in FlxG.touches.list)
@@ -410,7 +414,7 @@ class TitleState extends backend.ScriptState
 
 		if (initialized && !transitioning && skippedIntro)
 		{
-			if (newTitle && !pressedEnter)
+			if (titleText != null && newTitle && !pressedEnter)
 			{
 				var timer:Float = titleTimer;
 				if (timer >= 1)
@@ -422,12 +426,14 @@ class TitleState extends backend.ScriptState
 				titleText.alpha = FlxMath.lerp(titleTextAlphas[0], titleTextAlphas[1], timer);
 			}
 			
-			if(pressedEnter)
+			if(pressedEnter && !cancelableCall("onPressEnter"))
 			{
-				titleText.color = FlxColor.WHITE;
-				titleText.alpha = 1;
-				
-				if(titleText != null) titleText.animation.play('press');
+				if(titleText != null) {
+					titleText.color = FlxColor.WHITE;
+					titleText.alpha = 1;
+
+					titleText.animation.play('press');
+				}
 
 				FlxG.camera.flash(ClientPrefs.data.flashing ? FlxColor.WHITE : 0x4CFFFFFF, 1);
 				FlxG.sound.play(Paths.sound('confirmMenu'), 0.7);
@@ -435,15 +441,12 @@ class TitleState extends backend.ScriptState
 				transitioning = true;
 				// FlxG.sound.music.stop();
 
-				new FlxTimer().start(1, function(tmr:FlxTimer)
-				{
-					if (mustUpdate) {
-						MusicBeatState.switchState(new OutdatedState());
-					} else {
-						MusicBeatState.switchState(new MainMenuState());
-					}
+				function normExit(tmr:FlxTimer) {
+					var nextState = (mustUpdate) ? new OutdatedState() : new MainMenuState();
+					MusicBeatState.switchState(nextState);
 					closedState = true;
-				});
+				}
+				scriptCall("onPressEnterPost", [new FlxTimer().start(1, normExit)]);
 				// FlxG.sound.play(Paths.music('titleShoot'), 0.7);
 			}
 			#if TITLE_SCREEN_EASTER_EGG

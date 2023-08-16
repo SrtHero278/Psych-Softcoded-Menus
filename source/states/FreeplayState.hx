@@ -185,7 +185,9 @@ class FreeplayState extends backend.ScriptState
 
 	public function addSong(songName:String, weekNum:Int, songCharacter:String, color:Int)
 	{
-		songs.push(new SongMetadata(songName, weekNum, songCharacter, color));
+		var newSong = new SongMetadata(songName, weekNum, songCharacter, color);
+		if (!cancelableCall("onAddSong", [newSong]))
+			songs.push(new SongMetadata(songName, weekNum, songCharacter, color));
 	}
 
 	function weekIsLocked(name:String):Bool {
@@ -212,12 +214,10 @@ class FreeplayState extends backend.ScriptState
 	var instPlaying:Int = -1;
 	public static var vocals:FlxSound = null;
 	var holdTime:Float = 0;
-	override function normUpdate(elapsed:Float)
-	{
+	override function normUpdate(elapsed:Float) {
 		if (FlxG.sound.music.volume < 0.7)
-		{
 			FlxG.sound.music.volume += 0.5 * FlxG.elapsed;
-		}
+
 		lerpScore = Math.floor(FlxMath.lerp(lerpScore, intendedScore, FlxMath.bound(elapsed * 24, 0, 1)));
 		lerpRating = FlxMath.lerp(lerpRating, intendedRating, FlxMath.bound(elapsed * 12, 0, 1));
 
@@ -239,35 +239,28 @@ class FreeplayState extends backend.ScriptState
 		positionHighscore();
 
 		var shiftMult:Int = 1;
-		if(FlxG.keys.pressed.SHIFT) shiftMult = 3;
+		if (FlxG.keys.pressed.SHIFT) shiftMult = 3;
 
-		if(songs.length > 1)
-		{
-			if(FlxG.keys.justPressed.HOME)
-			{
+		if (songs.length > 1) {
+			if(FlxG.keys.justPressed.HOME) {
 				curSelected = 0;
 				changeSelection();
 				holdTime = 0;	
-			}
-			else if(FlxG.keys.justPressed.END)
-			{
+			} else if(FlxG.keys.justPressed.END) {
 				curSelected = songs.length - 1;
 				changeSelection();
 				holdTime = 0;	
 			}
-			if (controls.UI_UP_P)
-			{
+			if (controls.UI_UP_P) {
 				changeSelection(-shiftMult);
 				holdTime = 0;
 			}
-			if (controls.UI_DOWN_P)
-			{
+			if (controls.UI_DOWN_P) {
 				changeSelection(shiftMult);
 				holdTime = 0;
 			}
 
-			if(controls.UI_DOWN || controls.UI_UP)
-			{
+			if (controls.UI_DOWN || controls.UI_UP) {
 				var checkLastHold:Int = Math.floor((holdTime - 0.5) * 10);
 				holdTime += elapsed;
 				var checkNewHold:Int = Math.floor((holdTime - 0.5) * 10);
@@ -276,66 +269,58 @@ class FreeplayState extends backend.ScriptState
 					changeSelection((checkNewHold - checkLastHold) * (controls.UI_UP ? -shiftMult : shiftMult));
 			}
 
-			if(FlxG.mouse.wheel != 0)
-			{
+			if (FlxG.mouse.wheel != 0) {
 				FlxG.sound.play(Paths.sound('scrollMenu'), 0.2);
 				changeSelection(-shiftMult * FlxG.mouse.wheel, false);
 			}
 		}
 
-		if (controls.UI_LEFT_P)
-		{
+		if (controls.UI_LEFT_P) {
 			changeDiff(-1);
 			_updateSongLastDifficulty();
 		}
-		else if (controls.UI_RIGHT_P)
-		{
+		else if (controls.UI_RIGHT_P) {
 			changeDiff(1);
 			_updateSongLastDifficulty();
 		}
 
-		if (controls.BACK)
-		{
+		if (controls.BACK) {
 			persistentUpdate = false;
-			if(colorTween != null) {
+			if(colorTween != null)
 				colorTween.cancel();
-			}
+			
 			FlxG.sound.play(Paths.sound('cancelMenu'));
 			MusicBeatState.switchState(new MainMenuState());
 		}
 
-		if(FlxG.keys.justPressed.CONTROL)
-		{
+		if (FlxG.keys.justPressed.CONTROL) {
 			persistentUpdate = false;
 			openSubState(new GameplayChangersSubstate());
 		}
-		else if(FlxG.keys.justPressed.SPACE)
-		{
-			if(instPlaying != curSelected)
-			{
-				#if PRELOAD_ALL
-				destroyFreeplayVocals();
-				FlxG.sound.music.volume = 0;
-				Mods.currentModDirectory = songs[curSelected].folder;
-				var poop:String = Highscore.formatSong(songs[curSelected].songName.toLowerCase(), curDifficulty);
-				PlayState.SONG = Song.loadFromJson(poop, songs[curSelected].songName.toLowerCase());
-				if (PlayState.SONG.needsVoices)
-					vocals = new FlxSound().loadEmbedded(Paths.voices(PlayState.SONG.song));
-				else
-					vocals = new FlxSound();
+		#if PRELOAD_ALL
+		else if (FlxG.keys.justPressed.SPACE && instPlaying != curSelected) {
+			destroyFreeplayVocals();
+			FlxG.sound.music.volume = 0;
+			Mods.currentModDirectory = songs[curSelected].folder;
+			var poop:String = Highscore.formatSong(songs[curSelected].songName.toLowerCase(), curDifficulty);
+			PlayState.SONG = Song.loadFromJson(poop, songs[curSelected].songName.toLowerCase());
+			
+			if (PlayState.SONG.needsVoices)
+				vocals = new FlxSound().loadEmbedded(Paths.voices(PlayState.SONG.song));
+			else
+				vocals = new FlxSound();
 
-				FlxG.sound.list.add(vocals);
-				FlxG.sound.playMusic(Paths.inst(PlayState.SONG.song), 0.7);
-				vocals.play();
-				vocals.persist = true;
-				vocals.looped = true;
-				vocals.volume = 0.7;
-				instPlaying = curSelected;
-				#end
-			}
+			FlxG.sound.list.add(vocals);
+			FlxG.sound.playMusic(Paths.inst(PlayState.SONG.song), 0.7);
+			vocals.play();
+			vocals.persist = true;
+			vocals.looped = true;
+			vocals.volume = 0.7;
+			instPlaying = curSelected;
 		}
+		#end
 
-		else if (controls.ACCEPT)
+		else if (controls.ACCEPT && !cancelableCall("onSelectSong"))
 		{
 			persistentUpdate = false;
 			var songLowercase:String = Paths.formatToSongPath(songs[curSelected].songName);
@@ -351,8 +336,7 @@ class FreeplayState extends backend.ScriptState
 			}*/
 			trace(poop);
 
-			try
-			{
+			try {
 				PlayState.SONG = Song.loadFromJson(poop, songLowercase);
 				PlayState.isStoryMode = false;
 				PlayState.storyDifficulty = curDifficulty;
@@ -361,9 +345,7 @@ class FreeplayState extends backend.ScriptState
 				if(colorTween != null) {
 					colorTween.cancel();
 				}
-			}
-			catch(e:Dynamic)
-			{
+			} catch(e:Dynamic) {
 				trace('ERROR! $e');
 
 				var errorStr:String = e.toString();
@@ -377,6 +359,7 @@ class FreeplayState extends backend.ScriptState
 				updateTexts(elapsed);
 				return;
 			}
+
 			LoadingState.loadAndSwitchState(new PlayState());
 
 			FlxG.sound.music.volume = 0;
@@ -385,9 +368,7 @@ class FreeplayState extends backend.ScriptState
 			#if MODS_ALLOWED
 			DiscordClient.loadModRPC();
 			#end
-		}
-		else if(controls.RESET)
-		{
+		} else if (controls.RESET) {
 			persistentUpdate = false;
 			openSubState(new ResetScoreSubState(songs[curSelected].songName, curDifficulty, songs[curSelected].songCharacter));
 			FlxG.sound.play(Paths.sound('scrollMenu'));
@@ -427,6 +408,8 @@ class FreeplayState extends backend.ScriptState
 		positionHighscore();
 		missingText.visible = false;
 		missingTextBG.visible = false;
+
+		scriptCall("onChangeDiff");
 	}
 
 	function changeSelection(change:Int = 0, playSound:Bool = true)
@@ -491,6 +474,8 @@ class FreeplayState extends backend.ScriptState
 
 		changeDiff();
 		_updateSongLastDifficulty();
+
+		scriptCall("onChangeSong");
 	}
 
 	inline private function _updateSongLastDifficulty()

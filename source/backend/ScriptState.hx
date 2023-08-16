@@ -22,7 +22,6 @@ class ScriptState extends backend.MusicBeatState {
     }
 
     override public function create() {
-        super.create();
         tryScript();
         scriptCall("onCreate", scriptParams);
 
@@ -30,6 +29,8 @@ class ScriptState extends backend.MusicBeatState {
             normCreate();
 
         scriptCall("onCreatePost");
+
+        super.create(); //To put debug text on front.
     }
 
     override public function update(elapsed:Float) {
@@ -116,10 +117,7 @@ class ScriptState extends backend.MusicBeatState {
             script.set('ShaderFilter', openfl.filters.ShaderFilter);
             script.set('StringTools', StringTools);
     
-            script.set('debugPrint', function(text:String, ?color:FlxColor = null) {
-                if(color == null) color = FlxColor.WHITE;
-                addTextToDebug(text, color);
-            });
+            script.set('debugPrint', addTextToDebug);
     
             script.set('addHaxeLibrary', function(libName:String, ?libPackage:String = '') {
                 try {

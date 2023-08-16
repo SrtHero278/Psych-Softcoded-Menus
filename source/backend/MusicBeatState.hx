@@ -211,7 +211,7 @@ class MusicBeatState extends FlxUIState
 	#if LUA_ALLOWED
 	private var luaDebugGroup:FlxTypedGroup<DebugLuaText>;
 
-	public function addTextToDebug(text:String, color:FlxColor) {
+	public function addTextToDebug(text:String, ?color:FlxColor = 0xFFFFFFFF) {
 		var newText:DebugLuaText = luaDebugGroup.recycle(DebugLuaText);
 		newText.text = text;
 		newText.color = color;
