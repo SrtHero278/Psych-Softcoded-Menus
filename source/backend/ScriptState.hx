@@ -97,6 +97,8 @@ class ScriptState extends backend.MusicBeatState {
         if (sys.FileSystem.exists(scriptPath)) {
             script = new SScript(scriptPath, true, false);
 
+            script.set("staticVars", psychlua.FunkinLua.staticVars);
+
             script.set('FlxG', flixel.FlxG);
             script.set('FlxSprite', flixel.FlxSprite);
             script.set('FlxCamera', flixel.FlxCamera);

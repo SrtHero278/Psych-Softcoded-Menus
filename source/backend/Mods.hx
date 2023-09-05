@@ -29,6 +29,7 @@ class Mods
 		'videos',
 		'images',
 		'stages',
+		'states',
 		'weeks',
 		'fonts',
 		'scripts',

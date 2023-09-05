@@ -399,10 +399,6 @@ class PlayState extends MusicBeatState
 		add(dadGroup);
 		add(boyfriendGroup);
 
-		#if LUA_ALLOWED
-		luaDebugGroup.cameras = [camOther];
-		#end
-
 		// "GLOBAL" SCRIPTS
 		#if LUA_ALLOWED
 		var foldersToCheck:Array<String> = Mods.directoriesWithFile(Paths.getPreloadPath(), 'scripts/');
@@ -645,6 +641,9 @@ class PlayState extends MusicBeatState
 
 		super.create();
 		Paths.clearUnusedMemory();
+		#if LUA_ALLOWED
+		luaDebugGroup.cameras = [camOther];
+		#end
 		
 		CustomFadeTransition.nextCamera = camOther;
 		if(eventNotes.length < 1) checkEventNote();
